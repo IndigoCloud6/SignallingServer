@@ -1,12 +1,14 @@
 # Pixel Streaming Signalling Server (Java)
 
-A high-performance Java implementation of the Pixel Streaming signalling server using Netty and Spring Boot. This server provides WebSocket-based signalling for Pixel Streaming applications with support for players, streamers, and SFU (Selective Forwarding Unit) connections.
+A high-performance Java implementation of the Pixel Streaming signalling server using Netty and Spring Boot. This server provides WebSocket-based signalling for Pixel Streaming applications with support for players, streamers, SFU (Selective Forwarding Unit), and Unreal Engine connections. The server features a unified WebSocket endpoint with path-based routing for simplified deployment and management.
 
 ## Features
 
+- **Unified WebSocket Endpoint**: Single port with path-based routing (`/player`, `/streamer`, `/sfu`, `/unreal`)
+- **Backward Compatibility**: Support for legacy separate-port mode
 - **High-Performance WebSocket Server**: Built on Netty for handling 1000+ concurrent connections
 - **Protocol Compatible**: Maintains compatibility with existing Pixel Streaming applications
-- **Multiple Connection Types**: Support for player, streamer, and SFU connections
+- **Multiple Connection Types**: Support for player, streamer, SFU, and Unreal Engine connections
 - **REST API**: HTTP endpoints for health checks, statistics, and configuration
 - **Security**: CORS support, rate limiting, and optional authentication
 - **Monitoring**: Micrometer metrics with Prometheus export
@@ -58,20 +60,37 @@ The application can be configured through `application.yml` or environment varia
 
 ### Default Ports
 
+**Legacy Mode (Separate Ports):**
 - **Player WebSocket**: 8889
 - **Streamer WebSocket**: 8888
 - **SFU WebSocket**: 8890
 - **HTTP API**: 8080
+
+**Unified Mode (Single Port with Path Routing):**
+- **All WebSocket connections**: 8888 (configurable)
+  - Player: `ws://localhost:8888/player`
+  - Streamer: `ws://localhost:8888/streamer`
+  - SFU: `ws://localhost:8888/sfu`
+  - Unreal Engine: `ws://localhost:8888/unreal`
+- **HTTP API**: 8080
+
+> **Note**: The server supports both legacy separate-port mode and new unified-port mode. Use `enable-unified-port: true` to enable the unified WebSocket endpoint.
 
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SIGNALLING_HOST` | Server bind address | `0.0.0.0` |
-| `SIGNALLING_PLAYER_PORT` | Player WebSocket port | `8889` |
-| `SIGNALLING_STREAMER_PORT` | Streamer WebSocket port | `8888` |
-| `SIGNALLING_SFU_PORT` | SFU WebSocket port | `8890` |
+| `SIGNALLING_PLAYER_PORT` | Player WebSocket port (legacy mode) | `8889` |
+| `SIGNALLING_STREAMER_PORT` | Streamer WebSocket port (legacy mode) | `8888` |
+| `SIGNALLING_SFU_PORT` | SFU WebSocket port (legacy mode) | `8890` |
 | `SIGNALLING_HTTP_PORT` | HTTP API port | `8080` |
+| `SIGNALLING_UNIFIED_PORT` | Unified WebSocket port | `8888` |
+| `SIGNALLING_ENABLE_UNIFIED_PORT` | Enable unified WebSocket endpoint | `true` |
+| `SIGNALLING_PLAYER_PATH` | Player path (unified mode) | `/player` |
+| `SIGNALLING_STREAMER_PATH` | Streamer path (unified mode) | `/streamer` |
+| `SIGNALLING_SFU_PATH` | SFU path (unified mode) | `/sfu` |
+| `SIGNALLING_UNREAL_PATH` | Unreal Engine path (unified mode) | `/unreal` |
 | `SIGNALLING_MAX_SUBSCRIBERS` | Max players per streamer | `100` |
 | `SIGNALLING_ENABLE_SFU` | Enable SFU support | `true` |
 | `SIGNALLING_ENABLE_AUTH` | Enable authentication | `false` |
@@ -80,10 +99,38 @@ The application can be configured through `application.yml` or environment varia
 
 ### Example Configuration
 
+**Unified WebSocket Mode (Recommended):**
 ```yaml
 signalling:
   server:
     host: 0.0.0.0
+    unified-port: 8888
+    enable-unified-port: true
+    http-port: 8080
+    max-subscribers: 100
+    enable-sfu: true
+
+  websocket:
+    max-frame-size: 65536
+    ping-interval-seconds: 30
+    connection-timeout-seconds: 60
+    player-path: /player
+    streamer-path: /streamer
+    sfu-path: /sfu
+    unreal-path: /unreal
+
+  security:
+    enable-auth: false
+    enable-cors: true
+    rate-limit-per-minute: 60
+```
+
+**Legacy Separate Ports Mode:**
+```yaml
+signalling:
+  server:
+    host: 0.0.0.0
+    enable-unified-port: false
     player-port: 8889
     streamer-port: 8888
     sfu-port: 8890
@@ -150,18 +197,27 @@ The server maintains compatibility with the existing Pixel Streaming signalling 
 
 ### Connection Flow
 
-1. **Player Connection**: Connect to player port → Send `identify` → Receive `config` → Get subscribed to available streamer
-2. **Streamer Connection**: Connect to streamer port → Send `identify` → Receive `config` → Start accepting player subscriptions
-3. **SFU Connection**: Connect to SFU port → Send `identify` → Receive `config` → Handle multi-participant scenarios
+**Unified WebSocket Mode:**
+1. **Player Connection**: Connect to `ws://host:8888/player` → Send `identify` → Receive `config` → Get subscribed to available streamer
+2. **Streamer Connection**: Connect to `ws://host:8888/streamer` → Send `identify` → Receive `config` → Start accepting player subscriptions
+3. **SFU Connection**: Connect to `ws://host:8888/sfu` → Send `identify` → Receive `config` → Handle multi-participant scenarios
+4. **Unreal Engine Connection**: Connect to `ws://host:8888/unreal` → Send `identify` → Receive `config` → Interactive streaming scenarios
+
+**Legacy Mode:**
+1. **Player Connection**: Connect to player port (8889) → Send `identify` → Receive `config` → Get subscribed to available streamer
+2. **Streamer Connection**: Connect to streamer port (8888) → Send `identify` → Receive `config` → Start accepting player subscriptions
+3. **SFU Connection**: Connect to SFU port (8890) → Send `identify` → Receive `config` → Handle multi-participant scenarios
 
 ## Architecture
 
 ### Core Components
 
 - **SignallingApplication**: Main Spring Boot application class
-- **SignallingServerOrchestrator**: Manages lifecycle of all WebSocket servers
-- **ConnectionManager**: Handles connection lifecycle and routing
-- **NettyWebSocketServer**: High-performance WebSocket server implementation
+- **SignallingServerOrchestrator**: Manages lifecycle of all WebSocket servers (both unified and legacy modes)
+- **ConnectionManager**: Handles connection lifecycle and routing for all connection types
+- **UnifiedNettyWebSocketServer**: Unified WebSocket server with path-based routing
+- **NettyWebSocketServer**: Legacy individual WebSocket server implementation  
+- **PathBasedWebSocketHandshakeHandler**: Routes WebSocket connections based on URL paths
 - **MessageHelper**: JSON message processing and serialization
 - **AbstractConnection**: Base class for all connection types
 
@@ -170,6 +226,7 @@ The server maintains compatibility with the existing Pixel Streaming signalling 
 - **PlayerConnection**: Handles player WebSocket connections and message routing
 - **StreamerConnection**: Manages streamer connections and subscriber relationships
 - **SFUConnection**: Supports SFU-based multi-participant streaming
+- **UnrealConnection**: Supports Unreal Engine interactive streaming connections
 
 ### Security
 
@@ -251,6 +308,25 @@ ENTRYPOINT ["java", "-jar", "/app.jar"]
 
 ### Docker Compose
 
+**Unified WebSocket Mode:**
+```yaml
+version: '3.8'
+services:
+  signalling:
+    build: .
+    ports:
+      - "8080:8080"   # HTTP API
+      - "8888:8888"   # Unified WebSocket (all connection types)
+    environment:
+      - SIGNALLING_ENABLE_UNIFIED_PORT=true
+      - SIGNALLING_UNIFIED_PORT=8888
+      - SIGNALLING_LOG_LEVEL=INFO
+      - SIGNALLING_ENABLE_CORS=true
+    volumes:
+      - ./logs:/app/logs
+```
+
+**Legacy Separate Ports Mode:**
 ```yaml
 version: '3.8'
 services:
@@ -262,6 +338,7 @@ services:
       - "8889:8889"   # Player WebSocket
       - "8890:8890"   # SFU WebSocket
     environment:
+      - SIGNALLING_ENABLE_UNIFIED_PORT=false
       - SIGNALLING_LOG_LEVEL=INFO
       - SIGNALLING_ENABLE_CORS=true
     volumes:
