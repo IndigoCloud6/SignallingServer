@@ -6,6 +6,9 @@ signalling:
     player-port: ${SIGNALLING_PLAYER_PORT:8889}
     sfu-port: ${SIGNALLING_SFU_PORT:8890}
     http-port: ${SIGNALLING_HTTP_PORT:8080}
+    # New unified WebSocket configuration
+    unified-port: ${SIGNALLING_UNIFIED_PORT:8888}
+    enable-unified-port: ${SIGNALLING_ENABLE_UNIFIED_PORT:true}
     max-subscribers: ${SIGNALLING_MAX_SUBSCRIBERS:100}
     enable-sfu: ${SIGNALLING_ENABLE_SFU:true}
 
@@ -20,6 +23,11 @@ signalling:
     max-frame-size: ${SIGNALLING_MAX_FRAME_SIZE:65536}
     ping-interval-seconds: ${SIGNALLING_PING_INTERVAL:30}
     connection-timeout-seconds: ${SIGNALLING_CONNECTION_TIMEOUT:60}
+    # Path configurations for unified WebSocket server
+    player-path: ${SIGNALLING_PLAYER_PATH:/player}
+    streamer-path: ${SIGNALLING_STREAMER_PATH:/streamer}
+    sfu-path: ${SIGNALLING_SFU_PATH:/sfu}
+    unreal-path: ${SIGNALLING_UNREAL_PATH:/unreal}
 
   api:
     base-path: ${SIGNALLING_API_BASE_PATH:/api}
