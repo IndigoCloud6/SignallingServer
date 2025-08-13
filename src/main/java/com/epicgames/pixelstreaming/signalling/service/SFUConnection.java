@@ -71,8 +71,8 @@ public class SFUConnection extends AbstractConnection {
      * Handle SFU identification message.
      */
     private void handleIdentifyMessage(BaseMessage message) {
-        if (message.getData() != null && message.getData().has("sfuId")) {
-            this.sfuId = message.getData().get("sfuId").asText();
+        if (message.has("sfuId")) {
+            this.sfuId = (String) message.get("sfuId");
             logger.info("SFU {} identified with ID: {}", id, sfuId);
         } else {
             this.sfuId = "sfu_" + id.substring(0, 8);

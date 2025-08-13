@@ -30,6 +30,7 @@ public final class MessageTypes {
     public static final String STREAMER_ID_CHANGED = "streamerIdChanged";
     public static final String STREAMER_DATA_CHANNELS = "streamerDataChannels";
     public static final String STREAMER_DISCONNECTED = "streamerDisconnected";
+    public static final String STREAMER_LIST = "streamerList";
 
     // SFU (Selective Forwarding Unit) messages
     public static final String SFU_RECV_DATA_CHANNEL_READY = "sfuRecvDataChannelReady";

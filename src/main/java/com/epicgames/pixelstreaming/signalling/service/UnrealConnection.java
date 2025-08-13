@@ -71,8 +71,8 @@ public class UnrealConnection extends AbstractConnection {
      * Handle Unreal client identification message.
      */
     private void handleIdentifyMessage(BaseMessage message) {
-        if (message.getData() != null && message.getData().has("unrealId")) {
-            this.unrealId = message.getData().get("unrealId").asText();
+        if (message.has("unrealId")) {
+            this.unrealId = (String) message.get("unrealId");
             logger.info("Unreal client {} identified with ID: {}", id, unrealId);
         }
 

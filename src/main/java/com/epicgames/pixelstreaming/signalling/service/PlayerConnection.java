@@ -71,8 +71,8 @@ public class PlayerConnection extends AbstractConnection {
      * Handle player identification message.
      */
     private void handleIdentifyMessage(BaseMessage message) {
-        if (message.getData() != null && message.getData().has("playerId")) {
-            this.playerId = message.getData().get("playerId").asText();
+        if (message.has("playerId")) {
+            this.playerId = (String) message.get("playerId");
             logger.info("Player {} identified with ID: {}", id, playerId);
         }
 

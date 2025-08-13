@@ -78,8 +78,8 @@ public class StreamerConnection extends AbstractConnection {
      * Handle streamer identification message.
      */
     private void handleIdentifyMessage(BaseMessage message) {
-        if (message.getData() != null && message.getData().has("streamerId")) {
-            String newStreamerId = message.getData().get("streamerId").asText();
+        if (message.has("streamerId")) {
+            String newStreamerId = (String) message.get("streamerId");
             if (!newStreamerId.equals(this.streamerId)) {
                 String oldStreamerId = this.streamerId;
                 this.streamerId = newStreamerId;
