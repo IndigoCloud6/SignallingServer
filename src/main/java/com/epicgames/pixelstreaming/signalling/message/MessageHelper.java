@@ -30,19 +30,15 @@ public class MessageHelper {
      */
     public BaseMessage parseMessage(String json) {
         try {
-            JsonNode rootNode = objectMapper.readTree(json);
+            BaseMessage message = objectMapper.readValue(json, BaseMessage.class);
             
-            if (!rootNode.has("type")) {
+            // Validate that the message has a type field
+            if (message.getType() == null) {
                 logger.warn("Message missing 'type' field: {}", json);
                 return null;
             }
-
-            String type = rootNode.get("type").asText();
-            String id = rootNode.has("id") ? rootNode.get("id").asText() : null;
-            JsonNode data = rootNode.has("data") ? rootNode.get("data") : null;
-
-            return new GenericMessage(type, id, data);
-
+            
+            return message;
         } catch (JsonProcessingException e) {
             logger.error("Failed to parse message JSON: {}", json, e);
             return null;
@@ -71,7 +67,19 @@ public class MessageHelper {
      * @return The config message
      */
     public BaseMessage createConfigMessage(JsonNode peerOptions) {
-        return new GenericMessage(MessageTypes.CONFIG, null, peerOptions);
+        BaseMessage message = new BaseMessage(MessageTypes.CONFIG);
+        if (peerOptions != null) {
+            message.put("peerConnectionOptions", peerOptions);
+        } else {
+            // Create default empty peer connection options
+            try {
+                JsonNode defaultOptions = objectMapper.createObjectNode();
+                message.put("peerConnectionOptions", defaultOptions);
+            } catch (Exception e) {
+                logger.error("Failed to create default peer connection options", e);
+            }
+        }
+        return message;
     }
 
     /**
@@ -81,13 +89,9 @@ public class MessageHelper {
      * @return The player count message
      */
     public BaseMessage createPlayerCountMessage(int count) {
-        try {
-            JsonNode countData = objectMapper.valueToTree(new PlayerCountData(count));
-            return new GenericMessage(MessageTypes.PLAYER_COUNT, null, countData);
-        } catch (Exception e) {
-            logger.error("Failed to create player count message", e);
-            return null;
-        }
+        BaseMessage message = new BaseMessage(MessageTypes.PLAYER_COUNT);
+        message.put("count", count);
+        return message;
     }
 
     /**
@@ -97,13 +101,9 @@ public class MessageHelper {
      * @return The error message
      */
     public BaseMessage createErrorMessage(String errorMessage) {
-        try {
-            JsonNode errorData = objectMapper.valueToTree(new ErrorData(errorMessage));
-            return new GenericMessage(MessageTypes.ERROR, null, errorData);
-        } catch (Exception e) {
-            logger.error("Failed to create error message", e);
-            return null;
-        }
+        BaseMessage message = new BaseMessage(MessageTypes.ERROR);
+        message.put("message", errorMessage);
+        return message;
     }
 
     /**
@@ -112,7 +112,7 @@ public class MessageHelper {
      * @return The ping message
      */
     public BaseMessage createPingMessage() {
-        return new GenericMessage(MessageTypes.PING);
+        return new BaseMessage(MessageTypes.PING);
     }
 
     /**
@@ -121,49 +121,73 @@ public class MessageHelper {
      * @return The pong message
      */
     public BaseMessage createPongMessage() {
-        return new GenericMessage(MessageTypes.PONG);
+        return new BaseMessage(MessageTypes.PONG);
     }
 
     /**
-     * Generic message implementation.
+     * Create an ICE candidate message.
+     *
+     * @param candidate The ICE candidate object
+     * @return The ICE candidate message
      */
-    private static class GenericMessage extends BaseMessage {
-        public GenericMessage(String type) {
-            super(type);
-        }
-
-        public GenericMessage(String type, String id, JsonNode data) {
-            super(type, id, data);
-        }
+    public BaseMessage createIceCandidateMessage(Object candidate) {
+        BaseMessage message = new BaseMessage(MessageTypes.ICE_CANDIDATE);
+        message.put("candidate", candidate);
+        return message;
     }
 
     /**
-     * Data class for player count messages.
+     * Create a streamer list message.
+     *
+     * @param streamerIds List of streamer IDs
+     * @return The streamer list message
      */
-    private static class PlayerCountData {
-        private final int count;
-
-        public PlayerCountData(int count) {
-            this.count = count;
-        }
-
-        public int getCount() {
-            return count;
-        }
+    public BaseMessage createStreamerListMessage(java.util.List<String> streamerIds) {
+        BaseMessage message = new BaseMessage(MessageTypes.STREAMER_LIST);
+        message.put("ids", streamerIds);
+        return message;
     }
 
     /**
-     * Data class for error messages.
+     * Create a player connected message.
+     *
+     * @param playerId The player ID
+     * @param dataChannel Whether data channel is enabled
+     * @param sfu Whether SFU is enabled
+     * @param sendOffer Whether to send offer
+     * @return The player connected message
      */
-    private static class ErrorData {
-        private final String message;
-
-        public ErrorData(String message) {
-            this.message = message;
-        }
-
-        public String getMessage() {
-            return message;
-        }
+    public BaseMessage createPlayerConnectedMessage(String playerId, boolean dataChannel, boolean sfu, boolean sendOffer) {
+        BaseMessage message = new BaseMessage(MessageTypes.PLAYER_CONNECTED);
+        message.put("playerId", playerId);
+        message.put("dataChannel", dataChannel);
+        message.put("sfu", sfu);
+        message.put("sendOffer", sendOffer);
+        return message;
     }
+
+    /**
+     * Create an offer message.
+     *
+     * @param sdp The SDP offer
+     * @return The offer message
+     */
+    public BaseMessage createOfferMessage(String sdp) {
+        BaseMessage message = new BaseMessage(MessageTypes.OFFER);
+        message.put("sdp", sdp);
+        return message;
+    }
+
+    /**
+     * Create an answer message.
+     *
+     * @param sdp The SDP answer
+     * @return The answer message
+     */
+    public BaseMessage createAnswerMessage(String sdp) {
+        BaseMessage message = new BaseMessage(MessageTypes.ANSWER);
+        message.put("sdp", sdp);
+        return message;
+    }
+
 }

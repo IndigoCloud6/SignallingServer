@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class MessageHelperTest {
@@ -63,25 +66,27 @@ class MessageHelperTest {
 
     @Test
     void testSerializeMessage() throws Exception {
-        JsonNode data = objectMapper.valueToTree("test-data");
-        BaseMessage message = new TestMessage("test-type", "test-id", data);
+        BaseMessage message = new BaseMessage("test-type");
+        message.setId("test-id");
+        message.put("testData", "test-value");
         
         String json = messageHelper.serializeMessage(message);
         
         assertNotNull(json);
         assertTrue(json.contains("test-type"));
         assertTrue(json.contains("test-id"));
+        assertTrue(json.contains("test-value"));
     }
 
     @Test
     void testCreateConfigMessage() throws Exception {
-        JsonNode peerOptions = objectMapper.valueToTree("{\"iceServers\":[]}");
+        JsonNode peerOptions = objectMapper.createObjectNode();
         
         BaseMessage message = messageHelper.createConfigMessage(peerOptions);
         
         assertNotNull(message);
         assertEquals(MessageTypes.CONFIG, message.getType());
-        assertNotNull(message.getData());
+        assertTrue(message.has("peerConnectionOptions"));
     }
 
     @Test
@@ -90,7 +95,8 @@ class MessageHelperTest {
         
         assertNotNull(message);
         assertEquals(MessageTypes.PLAYER_COUNT, message.getType());
-        assertNotNull(message.getData());
+        assertTrue(message.has("count"));
+        assertEquals(5, message.get("count"));
     }
 
     @Test
@@ -99,7 +105,8 @@ class MessageHelperTest {
         
         assertNotNull(message);
         assertEquals(MessageTypes.ERROR, message.getType());
-        assertNotNull(message.getData());
+        assertTrue(message.has("message"));
+        assertEquals("Test error", message.get("message"));
     }
 
     @Test
@@ -118,10 +125,72 @@ class MessageHelperTest {
         assertEquals(MessageTypes.PONG, message.getType());
     }
 
-    // Test message implementation
-    private static class TestMessage extends BaseMessage {
-        public TestMessage(String type, String id, JsonNode data) {
-            super(type, id, data);
-        }
+    @Test
+    void testCreateIceCandidateMessage() {
+        Map<String, Object> candidate = new HashMap<>();
+        candidate.put("sdpMid", "0");
+        candidate.put("sdpMLineIndex", 0);
+        candidate.put("candidate", "candidate:1 1 UDP 2130706431 192.168.1.1 50000 typ host");
+        
+        BaseMessage message = messageHelper.createIceCandidateMessage(candidate);
+        
+        assertNotNull(message);
+        assertEquals(MessageTypes.ICE_CANDIDATE, message.getType());
+        assertTrue(message.has("candidate"));
+        assertEquals(candidate, message.get("candidate"));
     }
+
+    @Test
+    void testCreateStreamerListMessage() {
+        java.util.List<String> streamerIds = java.util.Arrays.asList("DefaultStreamer", "Streamer2");
+        
+        BaseMessage message = messageHelper.createStreamerListMessage(streamerIds);
+        
+        assertNotNull(message);
+        assertEquals(MessageTypes.STREAMER_LIST, message.getType());
+        assertTrue(message.has("ids"));
+        assertEquals(streamerIds, message.get("ids"));
+    }
+
+    @Test
+    void testCreatePlayerConnectedMessage() {
+        BaseMessage message = messageHelper.createPlayerConnectedMessage("player123", true, false, true);
+        
+        assertNotNull(message);
+        assertEquals(MessageTypes.PLAYER_CONNECTED, message.getType());
+        assertTrue(message.has("playerId"));
+        assertTrue(message.has("dataChannel"));
+        assertTrue(message.has("sfu"));
+        assertTrue(message.has("sendOffer"));
+        assertEquals("player123", message.get("playerId"));
+        assertEquals(true, message.get("dataChannel"));
+        assertEquals(false, message.get("sfu"));
+        assertEquals(true, message.get("sendOffer"));
+    }
+
+    @Test
+    void testCreateOfferMessage() {
+        String sdp = "v=0\\r\\no=- 123 1 IN IP4 127.0.0.1\\r\\n";
+        
+        BaseMessage message = messageHelper.createOfferMessage(sdp);
+        
+        assertNotNull(message);
+        assertEquals(MessageTypes.OFFER, message.getType());
+        assertTrue(message.has("sdp"));
+        assertEquals(sdp, message.get("sdp"));
+    }
+
+    @Test
+    void testCreateAnswerMessage() {
+        String sdp = "v=0\\r\\no=- 456 1 IN IP4 127.0.0.1\\r\\n";
+        
+        BaseMessage message = messageHelper.createAnswerMessage(sdp);
+        
+        assertNotNull(message);
+        assertEquals(MessageTypes.ANSWER, message.getType());
+        assertTrue(message.has("sdp"));
+        assertEquals(sdp, message.get("sdp"));
+    }
+
+
 }

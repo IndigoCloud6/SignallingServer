@@ -1,23 +1,28 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 package com.epicgames.pixelstreaming.signalling.message;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base class for all signalling messages.
- * Represents the common structure of messages in the Pixel Streaming protocol.
+ * Uses a flexible structure that can handle any JSON message format while keeping
+ * the 'type' field strongly typed for the Pixel Streaming protocol.
  */
-public abstract class BaseMessage {
+public class BaseMessage {
     
     @JsonProperty("type")
     private String type;
     
-    @JsonProperty("id")
-    private String id;
-    
-    @JsonProperty("data")
-    private JsonNode data;
+    @JsonIgnore
+    private final Map<String, Object> additionalProperties = new HashMap<>();
 
     public BaseMessage() {}
 
@@ -25,33 +30,144 @@ public abstract class BaseMessage {
         this.type = type;
     }
 
-    public BaseMessage(String type, String id) {
-        this.type = type;
-        this.id = id;
+    // Getters and setters for type field
+    public String getType() { 
+        return type; 
+    }
+    
+    public void setType(String type) { 
+        this.type = type; 
     }
 
-    public BaseMessage(String type, String id, JsonNode data) {
-        this.type = type;
-        this.id = id;
-        this.data = data;
+    /**
+     * Get all additional properties (used by Jackson for serialization).
+     * 
+     * @return Map of additional properties
+     */
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return additionalProperties;
     }
 
-    // Getters and setters
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    /**
+     * Set additional property (used by Jackson for deserialization).
+     * 
+     * @param name Property name
+     * @param value Property value
+     */
+    @JsonAnySetter
+    public void setAdditionalProperty(String name, Object value) {
+        additionalProperties.put(name, value);
+    }
 
-    public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
+    /**
+     * Get a property value.
+     * 
+     * @param name Property name
+     * @return Property value or null if not found
+     */
+    public Object get(String name) {
+        return additionalProperties.get(name);
+    }
 
-    public JsonNode getData() { return data; }
-    public void setData(JsonNode data) { this.data = data; }
+    /**
+     * Set a property value.
+     * 
+     * @param name Property name
+     * @param value Property value
+     */
+    public void put(String name, Object value) {
+        additionalProperties.put(name, value);
+    }
+
+    /**
+     * Check if a property exists.
+     * 
+     * @param name Property name
+     * @return true if property exists
+     */
+    public boolean has(String name) {
+        return additionalProperties.containsKey(name);
+    }
+
+    /**
+     * Remove a property.
+     * 
+     * @param name Property name
+     * @return The removed value, or null if not found
+     */
+    public Object remove(String name) {
+        return additionalProperties.remove(name);
+    }
+
+    // Legacy compatibility methods for backward compatibility
+    
+    /**
+     * Get the 'id' property for backward compatibility.
+     * 
+     * @return The id value or null
+     */
+    @JsonIgnore
+    public String getId() {
+        Object id = additionalProperties.get("id");
+        return id != null ? id.toString() : null;
+    }
+
+    /**
+     * Set the 'id' property for backward compatibility.
+     * 
+     * @param id The id value
+     */
+    @JsonIgnore
+    public void setId(String id) {
+        if (id != null) {
+            additionalProperties.put("id", id);
+        } else {
+            additionalProperties.remove("id");
+        }
+    }
+
+    /**
+     * Get the 'data' property for backward compatibility.
+     * 
+     * @return The data value or null
+     */
+    @JsonIgnore
+    public JsonNode getData() {
+        Object data = additionalProperties.get("data");
+        if (data instanceof JsonNode) {
+            return (JsonNode) data;
+        } else if (data != null) {
+            // Convert to JsonNode if it's not already
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                return mapper.valueToTree(data);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Set the 'data' property for backward compatibility.
+     * 
+     * @param data The data value
+     */
+    @JsonIgnore
+    public void setData(JsonNode data) {
+        if (data != null) {
+            additionalProperties.put("data", data);
+        } else {
+            additionalProperties.remove("data");
+        }
+    }
 
     @Override
     public String toString() {
         return "BaseMessage{" +
                 "type='" + type + '\'' +
-                ", id='" + id + '\'' +
-                ", data=" + data +
+                ", additionalProperties=" + additionalProperties +
                 '}';
     }
 }
