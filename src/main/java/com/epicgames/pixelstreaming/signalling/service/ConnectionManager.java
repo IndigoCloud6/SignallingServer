@@ -28,6 +28,7 @@ public class ConnectionManager {
     private final Map<String, PlayerConnection> playerConnections = new ConcurrentHashMap<>();
     private final Map<String, StreamerConnection> streamerConnections = new ConcurrentHashMap<>();
     private final Map<String, SFUConnection> sfuConnections = new ConcurrentHashMap<>();
+    private final Map<String, UnrealConnection> unrealConnections = new ConcurrentHashMap<>();
 
     private final SignallingConfig config;
     private final MessageHelper messageHelper;
@@ -38,6 +39,7 @@ public class ConnectionManager {
     private final Counter playerConnectionsTotal;
     private final Counter streamerConnectionsTotal;
     private final Counter sfuConnectionsTotal;
+    private final Counter unrealConnectionsTotal;
     private final Counter disconnectionsTotal;
 
     public ConnectionManager(SignallingConfig config, MessageHelper messageHelper, MeterRegistry meterRegistry) {
@@ -59,6 +61,10 @@ public class ConnectionManager {
             .description("Total number of SFU connections")
             .register(meterRegistry);
 
+        this.unrealConnectionsTotal = Counter.builder("signalling.connections.unreal.total")
+            .description("Total number of Unreal connections")
+            .register(meterRegistry);
+
         this.disconnectionsTotal = Counter.builder("signalling.disconnections.total")
             .description("Total number of disconnections")
             .register(meterRegistry);
@@ -74,6 +80,10 @@ public class ConnectionManager {
 
         Gauge.builder("signalling.connections.sfu.current", this, ConnectionManager::getSfuConnectionCount)
             .description("Current number of SFU connections")
+            .register(meterRegistry);
+
+        Gauge.builder("signalling.connections.unreal.current", this, ConnectionManager::getUnrealConnectionCount)
+            .description("Current number of Unreal connections")
             .register(meterRegistry);
 
         // Start connection cleanup task
@@ -143,6 +153,28 @@ public class ConnectionManager {
             disconnectionsTotal.increment();
             logger.info("Removed SFU connection {} (total: {})", 
                        connection.getId(), sfuConnections.size());
+        }
+    }
+
+    /**
+     * Add an Unreal connection.
+     */
+    public void addUnrealConnection(UnrealConnection connection) {
+        unrealConnections.put(connection.getId(), connection);
+        unrealConnectionsTotal.increment();
+        logger.info("Added Unreal connection {} (total: {})", 
+                   connection.getId(), unrealConnections.size());
+    }
+
+    /**
+     * Remove an Unreal connection.
+     */
+    public void removeUnrealConnection(UnrealConnection connection) {
+        UnrealConnection removed = unrealConnections.remove(connection.getId());
+        if (removed != null) {
+            disconnectionsTotal.increment();
+            logger.info("Removed Unreal connection {} (total: {})", 
+                       connection.getId(), unrealConnections.size());
         }
     }
 
@@ -222,6 +254,13 @@ public class ConnectionManager {
      */
     public int getSfuConnectionCount() {
         return sfuConnections.size();
+    }
+
+    /**
+     * Get current Unreal connection count.
+     */
+    public int getUnrealConnectionCount() {
+        return unrealConnections.size();
     }
 
     /**

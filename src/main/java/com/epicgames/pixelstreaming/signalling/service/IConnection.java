@@ -82,6 +82,7 @@ public interface IConnection {
     enum ConnectionType {
         PLAYER,
         STREAMER,
-        SFU
+        SFU,
+        UNREAL
     }
 }

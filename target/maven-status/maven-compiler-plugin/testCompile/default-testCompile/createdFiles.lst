@@ -1,0 +1,4 @@
+com/epicgames/pixelstreaming/signalling/handler/PathBasedRoutingTest.class
+com/epicgames/pixelstreaming/signalling/message/MessageHelperTest.class
+com/epicgames/pixelstreaming/signalling/config/SignallingConfigIntegrationTest.class
+com/epicgames/pixelstreaming/signalling/message/MessageHelperTest$TestMessage.class

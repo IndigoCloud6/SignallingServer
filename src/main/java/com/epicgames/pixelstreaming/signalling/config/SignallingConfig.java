@@ -77,6 +77,13 @@ public class SignallingConfig {
         @Max(65535)
         private int httpPort = 8080;
 
+        // New unified WebSocket configuration
+        @Min(1024)
+        @Max(65535)
+        private int unifiedPort = 8888;
+
+        private boolean enableUnifiedPort = false;
+
         @Min(1)
         @Max(10000)
         private int maxSubscribers = 100;
@@ -107,6 +114,12 @@ public class SignallingConfig {
 
         public boolean isEnableSfu() { return enableSfu; }
         public void setEnableSfu(boolean enableSfu) { this.enableSfu = enableSfu; }
+
+        public int getUnifiedPort() { return unifiedPort; }
+        public void setUnifiedPort(int unifiedPort) { this.unifiedPort = unifiedPort; }
+
+        public boolean isEnableUnifiedPort() { return enableUnifiedPort; }
+        public void setEnableUnifiedPort(boolean enableUnifiedPort) { this.enableUnifiedPort = enableUnifiedPort; }
     }
 
     /**
@@ -156,6 +169,19 @@ public class SignallingConfig {
         @Max(3600)
         private int connectionTimeoutSeconds = 60;
 
+        // Path configurations for unified WebSocket server
+        @NotNull
+        private String playerPath = "/player";
+
+        @NotNull
+        private String streamerPath = "/streamer";
+
+        @NotNull
+        private String sfuPath = "/sfu";
+
+        @NotNull
+        private String unrealPath = "/unreal";
+
         // Getters and setters
         public int getMaxFrameSize() { return maxFrameSize; }
         public void setMaxFrameSize(int maxFrameSize) { this.maxFrameSize = maxFrameSize; }
@@ -165,6 +191,18 @@ public class SignallingConfig {
 
         public int getConnectionTimeoutSeconds() { return connectionTimeoutSeconds; }
         public void setConnectionTimeoutSeconds(int connectionTimeoutSeconds) { this.connectionTimeoutSeconds = connectionTimeoutSeconds; }
+
+        public String getPlayerPath() { return playerPath; }
+        public void setPlayerPath(String playerPath) { this.playerPath = playerPath; }
+
+        public String getStreamerPath() { return streamerPath; }
+        public void setStreamerPath(String streamerPath) { this.streamerPath = streamerPath; }
+
+        public String getSfuPath() { return sfuPath; }
+        public void setSfuPath(String sfuPath) { this.sfuPath = sfuPath; }
+
+        public String getUnrealPath() { return unrealPath; }
+        public void setUnrealPath(String unrealPath) { this.unrealPath = unrealPath; }
     }
 
     /**
