@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
  * This application provides high-performance signalling capabilities for Pixel Streaming
  * using Netty for WebSocket handling and Spring Boot for configuration management.
  */
-@SpringBootApplication(exclude = {WebMvcAutoConfiguration.class})
+@SpringBootApplication
 @EnableAsync
 public class SignallingApplication {
 
